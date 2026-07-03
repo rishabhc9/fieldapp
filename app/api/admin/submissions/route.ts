@@ -5,8 +5,18 @@ import { isValidAdminSession, ADMIN_COOKIE_NAME } from '@/lib/adminAuth';
 const BUCKET = 'visit-photos';
 const PAGE_SIZE = 25;
 
+type Submission = {
+  id: string;
+  region: string;
+  so_hq: string;
+  so_name: string;
+  dr_name: string;
+  brand: string;
+  photo_path: string | null;
+  created_at: string;
+};
+
 export async function GET(req: NextRequest) {
-  // Auth check
   const cookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
   if (!isValidAdminSession(cookie)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,9 +38,7 @@ export async function GET(req: NextRequest) {
     .range(from, to);
 
   if (search) {
-    query = query.or(
-      `dr_name.ilike.%${search}%,so_name.ilike.%${search}%`
-    );
+    query = query.or(`dr_name.ilike.%${search}%,so_name.ilike.%${search}%`);
   }
   if (region) {
     query = query.eq('region', region);
@@ -43,14 +51,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
 
-  // Generate short-lived signed URLs for each photo
   const rows = await Promise.all(
-    (data ?? []).map(async (row) => {
+    ((data ?? []) as Submission[]).map(async (row) => {
       let photoUrl: string | null = null;
       if (row.photo_path) {
         const { data: signed } = await sb.storage
           .from(BUCKET)
-          .createSignedUrl(row.photo_path, 60 * 60); // 1 hour
+          .createSignedUrl(row.photo_path, 60 * 60);
         photoUrl = signed?.signedUrl ?? null;
       }
       return { ...row, photoUrl };
