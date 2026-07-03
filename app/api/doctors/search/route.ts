@@ -1,3 +1,4 @@
+-e export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
@@ -10,9 +11,6 @@ export async function GET(req: NextRequest) {
 
   const sb = supabaseAdmin();
 
-  // Uses the pg_trgm GIN index for fast fuzzy search across 14k+ rows.
-  // ilike is simple and fast enough for prefix/contains; for even better
-  // fuzzy matching, you can swap to a Postgres full-text search function.
   const { data, error } = await sb
     .from('doctors')
     .select('name')
@@ -25,5 +23,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] }, { status: 500 });
   }
 
-  return NextResponse.json({ results: (data ?? []).map((r) => r.name) });
+  const results = (data as { name: string }[] ?? []).map((r) => r.name);
+  return NextResponse.json({ results });
 }
