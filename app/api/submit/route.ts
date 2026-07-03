@@ -6,6 +6,15 @@ const REQUIRED = ['region', 'soHq', 'soName', 'drName', 'brand'] as const;
 const BUCKET = 'visit-photos';
 const MAX_FILE_MB = 10;
 
+type SubmissionInsert = {
+  region: string;
+  so_hq: string;
+  so_name: string;
+  dr_name: string;
+  brand: string;
+  photo_path: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -54,14 +63,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { error: insertError } = await sb.from('submissions').insert({
+    const row: SubmissionInsert = {
       region: values.region,
       so_hq: values.soHq,
       so_name: values.soName,
       dr_name: values.drName,
       brand: values.brand,
       photo_path: path,
-    });
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await sb.from('submissions').insert(row as any);
 
     if (insertError) {
       console.error('DB insert error:', insertError);
