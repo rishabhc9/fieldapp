@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+
+const REQUIRED = ['region', 'soHq', 'soName', 'drName', 'brand'] as const;
+const BUCKET = 'visit-photos';
+const MAX_FILE_MB = 10;
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+
+    // Validate required text fields
+    const values: Record<string, string> = {};
+    for (const key of REQUIRED) {
+      const v = formData.get(key);
+      if (!v || typeof v !== 'string' || !v.trim()) {
+        return NextResponse.json(
+          { error: `Missing required field: ${key}` },
+          { status: 400 }
+        );
+      }
+      values[key] = v.trim();
+    }
+
+    // Validate photo
+    const photoFile = formData.get('photo');
+    if (!photoFile || !(photoFile instanceof File)) {
+      return NextResponse.json({ error: 'Photo is required' }, { status: 400 });
+    }
+    if (photoFile.size > MAX_FILE_MB * 1024 * 1024) {
+      return NextResponse.json(
+        { error: `Photo must be under ${MAX_FILE_MB}MB` },
+        { status: 400 }
+      );
+    }
+
+    const sb = supabaseAdmin();
+
+    // Upload image to Supabase Storage
+    const ext = photoFile.name.split('.').pop() ?? 'jpg';
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const buffer = Buffer.from(await photoFile.arrayBuffer());
+
+    const { error: uploadError } = await sb.storage
+      .from(BUCKET)
+      .upload(path, buffer, {
+        contentType: photoFile.type || 'image/jpeg',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return NextResponse.json(
+        { error: 'Photo upload failed. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    // Insert submission row
+    const { error: insertError } = await sb.from('submissions').insert({
+      region: values.region,
+      so_hq: values.soHq,
+      so_name: values.soName,
+      dr_name: values.drName,
+      brand: values.brand,
+      photo_path: path,
+    });
+
+    if (insertError) {
+      console.error('DB insert error:', insertError);
+      // Clean up uploaded file if DB write failed
+      await sb.storage.from(BUCKET).remove([path]);
+      return NextResponse.json(
+        { error: 'Could not save record. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('Unexpected error in /api/submit:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
