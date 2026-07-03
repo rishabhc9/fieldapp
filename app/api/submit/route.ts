@@ -1,4 +1,4 @@
--e export const runtime = 'nodejs';
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
 
-    // Validate required text fields
     const values: Record<string, string> = {};
     for (const key of REQUIRED) {
       const v = formData.get(key);
@@ -23,7 +22,6 @@ export async function POST(req: NextRequest) {
       values[key] = v.trim();
     }
 
-    // Validate photo
     const photoFile = formData.get('photo');
     if (!photoFile || !(photoFile instanceof File)) {
       return NextResponse.json({ error: 'Photo is required' }, { status: 400 });
@@ -37,7 +35,6 @@ export async function POST(req: NextRequest) {
 
     const sb = supabaseAdmin();
 
-    // Upload image to Supabase Storage
     const ext = photoFile.name.split('.').pop() ?? 'jpg';
     const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const buffer = Buffer.from(await photoFile.arrayBuffer());
@@ -57,7 +54,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert submission row
     const { error: insertError } = await sb.from('submissions').insert({
       region: values.region,
       so_hq: values.soHq,
@@ -69,7 +65,6 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('DB insert error:', insertError);
-      // Clean up uploaded file if DB write failed
       await sb.storage.from(BUCKET).remove([path]);
       return NextResponse.json(
         { error: 'Could not save record. Please try again.' },

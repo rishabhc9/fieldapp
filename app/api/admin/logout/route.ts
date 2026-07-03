@@ -1,4 +1,4 @@
--e export const runtime = 'nodejs';
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { ADMIN_COOKIE_NAME } from '@/lib/adminAuth';
 
