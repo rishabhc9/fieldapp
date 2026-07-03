@@ -73,13 +73,13 @@ export default function FieldForm() {
             Visit logged successfully
           </h2>
           <p className="mt-2 text-sm text-ink/60">
-            Your field visit record has been saved.
+            Your Registration has been saved.
           </p>
           <button
             onClick={() => setStatus('idle')}
             className="mt-6 rounded-md bg-moss px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-moss/90"
           >
-            Log another visit
+            Register Again
           </button>
         </div>
       </div>
@@ -91,10 +91,10 @@ export default function FieldForm() {
       {/* Header */}
       <div className="mx-auto mb-8 max-w-md">
         <p className="font-mono text-[11px] uppercase tracking-widest text-moss/60">
-          Field Operations
+          
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold text-ink">
-          Visit Log
+          Ceramic Plate Photo Registration
         </h1>
         <div className="mt-3 h-px w-12 bg-clay" />
       </div>
@@ -184,7 +184,7 @@ export default function FieldForm() {
           disabled={!allFilled() || status === 'submitting'}
           className="mt-2 w-full rounded-md bg-clay px-4 py-3 font-display text-[15px] font-bold text-white shadow-sm transition hover:bg-clay/90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {status === 'submitting' ? 'Saving…' : 'Submit Visit'}
+          {status === 'submitting' ? 'Saving…' : 'Submit'}
         </button>
       </form>
     </div>
